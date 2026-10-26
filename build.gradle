@@ -1,0 +1,48 @@
+plugins {
+    // 26.x is unobfuscated, so the non-"remap" Loom plugin is used and there is no mappings line.
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": inputs.properties.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+// The project's tests are a plain program (not JUnit), run by the coreSelfTest task below.
+// Without this, Gradle's default test task fails the build because it finds no JUnit tests.
+tasks.named('test') {
+    enabled = false
+}
+
+// Runs the Minecraft-independent tests (bidding rules, payments, parsing): ./gradlew coreSelfTest
+tasks.register('coreSelfTest', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.donutauction.CoreSelfTest'
+}
